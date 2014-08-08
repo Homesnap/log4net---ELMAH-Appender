@@ -42,24 +42,25 @@ namespace elmahappender_log4net
 		{
 			if (this._ErrorLog != null)
 			{
+				var message = (loggingEvent.MessageObject != null) ? loggingEvent.MessageObject.ToString() : null;
+
 				Error error;
 				if (loggingEvent.ExceptionObject != null)
 				{
-					error = new Error(loggingEvent.ExceptionObject);
+					error = new Error(loggingEvent.ExceptionObject, HttpContext.Current);
+					if (!string.IsNullOrEmpty(message))
+						error.Message = message;
 				}
 				else
 				{
-					error = new Error();
+					error = new Error(new Exception(message ?? "<unknown>"), HttpContext.Current) {
+						Detail = base.RenderLoggingEvent(loggingEvent),
+						HostName = this._HostName,
+						Type = "log4net - " + loggingEvent.Level
+					};
 				}
+
 				error.Time = DateTime.Now;
-				if (loggingEvent.MessageObject != null)
-				{
-					error.Message = loggingEvent.MessageObject.ToString();
-				}
-				error.Detail = base.RenderLoggingEvent(loggingEvent);
-				error.HostName = this._HostName;
-				error.User = loggingEvent.Identity;
-				error.Type = "log4net - " + loggingEvent.Level; // maybe allow the type to be customized?
 				this._ErrorLog.Log(error);
 			}
 		}
