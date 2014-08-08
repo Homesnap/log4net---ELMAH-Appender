@@ -47,7 +47,10 @@ namespace elmahappender_log4net
 				Error error;
 				if (loggingEvent.ExceptionObject != null)
 				{
-					error = new Error(loggingEvent.ExceptionObject, HttpContext.Current);
+					error = new Error(loggingEvent.ExceptionObject, HttpContext.Current) {
+						Time = DateTime.Now
+					};
+
 					if (!string.IsNullOrEmpty(message))
 						error.Message = message;
 				}
@@ -56,11 +59,16 @@ namespace elmahappender_log4net
 					error = new Error(new Exception(message ?? "<unknown>"), HttpContext.Current) {
 						Detail = base.RenderLoggingEvent(loggingEvent),
 						HostName = this._HostName,
+						Time = DateTime.Now,
 						Type = "log4net - " + loggingEvent.Level
 					};
 				}
 
-				error.Time = DateTime.Now;
+				// Enforce max length of Elmah error message
+				const int messageMaxLength = 500;
+				if (error.Message != null && error.Message.Length >= messageMaxLength)
+					error.Message = error.Message.Substring(0, messageMaxLength - 3) + "...";
+
 				this._ErrorLog.Log(error);
 			}
 		}
